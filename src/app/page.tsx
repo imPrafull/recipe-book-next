@@ -17,8 +17,8 @@ export default function Home({ searchParams }: { searchParams: Promise<{ search?
     const fetchRecipes = async () => {
       setIsLoading(true);
       try {
-        const data = await api.getRecipes(search);
-        setRecipes(data);
+        const { recipes: data } = await api.getRecipes({ search });
+        setRecipes(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Failed to fetch recipes:', error);
       } finally {
@@ -33,16 +33,16 @@ export default function Home({ searchParams }: { searchParams: Promise<{ search?
     <div className="py-8 animate-fade-in">
       <div className="flex justify-between items-end mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+          <h1 className="text-3xl font-extrabold tracking-tight">
             {search ? `Search results for "${search}"` : "Latest Recipes"}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2">Discover and cook delicious meals</p>
+          <p className="text-muted-foreground mt-2">Discover and cook delicious meals</p>
         </div>
       </div>
       
       {isLoading ? (
         <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
         <RecipeGrid recipes={recipes} />

@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Clock, ChevronRight } from 'lucide-react';
 
 export interface Recipe {
   id: string;
@@ -20,10 +22,9 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
 
   return (
     <Link href={`/recipes/${recipe.id}`} className="block group h-full">
-      <div className="flex flex-col h-full bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl border border-slate-200 dark:border-slate-700 transition-all duration-300 transform group-hover:-translate-y-1">
+      <Card className="flex flex-col h-full overflow-hidden hover:shadow-xl transition-all duration-300 transform group-hover:-translate-y-1">
         {/* Image Container with aspect ratio */}
-        <div className="relative aspect-video w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
-          {/* Error handling for Next Image can be tricky without domains config, using standard img for flexibility */}
+        <div className="relative aspect-video w-full overflow-hidden bg-muted">
           <img 
             src={imgUrl} 
             alt={recipe.title} 
@@ -31,31 +32,30 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
             loading="lazy"
           />
           {/* Cooking Time Badge */}
-          <div className="absolute top-3 right-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm text-slate-800 dark:text-slate-200 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 border border-slate-100 dark:border-slate-600">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm text-foreground text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 border border-border/50">
+            <Clock className="h-3.5 w-3.5 text-primary" />
             {recipe.cookingTime} min
           </div>
         </div>
 
         {/* Card Content */}
-        <div className="p-5 flex flex-col flex-grow">
-          <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2 line-clamp-1 group-hover:text-primary-600 transition-colors">
+        <CardHeader className="p-5 pb-2">
+          <CardTitle className="text-lg line-clamp-1 group-hover:text-primary transition-colors">
             {recipe.title}
-          </h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-2 flex-grow">
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="p-5 pt-0 flex-grow">
+          <p className="text-muted-foreground text-sm line-clamp-2">
             {recipe.description}
           </p>
-          
-          <div className="mt-4 flex items-center text-primary-500 text-sm font-medium">
-            View Recipe
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+        
+        <CardFooter className="p-5 pt-0 flex items-center text-primary text-sm font-medium">
+          View Recipe
+          <ChevronRight className="h-4 w-4 ml-1 transform group-hover:translate-x-1 transition-transform" />
+        </CardFooter>
+      </Card>
     </Link>
   );
 }

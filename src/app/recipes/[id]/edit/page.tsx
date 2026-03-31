@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import RecipeForm from '@/components/RecipeForm';
 import { Recipe } from '@/components/RecipeCard';
+import { Card } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 
 export default function EditRecipePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -37,7 +39,6 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
       router.push(`/recipes/${id}`);
     } catch (error) {
       console.error('Failed to update recipe:', error);
-      alert('Failed to update recipe. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -46,32 +47,32 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-32">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
 
   if (!recipe) {
-    return <div className="text-center py-20 text-xl font-bold text-slate-800 dark:text-slate-100">Recipe not found</div>;
+    return <div className="text-center py-20 text-xl font-bold">Recipe not found</div>;
   }
 
   return (
-    <div className="py-8 mb-16 animate-fade-in">
+    <div className="py-8 mb-16 px-4">
       <div className="max-w-3xl mx-auto mb-8 text-center">
-        <h1 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+        <h1 className="text-3xl font-extrabold tracking-tight">
           Edit Recipe
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-2">Update information for {recipe.title}</p>
+        <p className="text-muted-foreground mt-2">Update information for {recipe.title}</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-100 dark:border-slate-700">
+      <Card className="max-w-3xl mx-auto p-6 sm:p-10 rounded-xl overflow-hidden shadow-sm">
         <RecipeForm
           initialData={recipe}
           onSubmit={handleSubmit}
           isLoading={isSubmitting}
           submitLabel="Save Changes"
         />
-      </div>
+      </Card>
     </div>
   );
 }
