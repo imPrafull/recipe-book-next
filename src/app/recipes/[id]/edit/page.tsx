@@ -4,7 +4,6 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import RecipeForm from '@/components/RecipeForm';
-import { Recipe } from '@/components/RecipeCard';
 import { Card } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
@@ -32,10 +31,10 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
     fetchRecipe();
   }, [id]);
 
-  const handleSubmit = async (data: Partial<Recipe>) => {
+  const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
     try {
-      await api.updateRecipe(id, data);
+      await api.updateRecipe(id, formData);
       router.push(`/recipes/${id}`);
     } catch (error) {
       console.error('Failed to update recipe:', error);

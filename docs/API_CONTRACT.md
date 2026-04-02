@@ -10,8 +10,9 @@ This document outlines the API endpoints, request/response formats, and integrat
 ## Global Standards
 
 ### Request Headers
-For `POST` and `PUT` requests, ensure the following header is included:
-- `Content-Type: application/json`
+- For `GET` and `DELETE` requests, no special headers are required.
+- For `POST /recipes` and `PUT /recipes/:id`, use `Content-Type: multipart/form-data` (the request includes a file upload).
+- For any other `POST` or `PUT` requests, use `Content-Type: application/json`.
 
 ### Success Response Envelope
 All successful requests return a `200 OK` (or `201 Created`) with the following shape:
@@ -51,12 +52,23 @@ interface Recipe {
   ingredients: string[]; // List of ingredients
   steps: string[];       // Step-by-step instructions
   cookingTime: number;   // In minutes
-  image: string;         // URL to the image
+  image: string;         // Pre-signed S3 URL, valid for 24 hours
   createdAt: string;     // ISO Date string
 }
 
-type NewRecipe = Omit<Recipe, 'id' | 'createdAt'>;
-type UpdateRecipe = Partial<NewRecipe>;
+// For POST / PUT, send as multipart/form-data.
+// `image` is an optional file field (jpg/jpeg/png/webp, max 5 MB).
+// `ingredients` and `steps` must be JSON-encoded strings in the form body.
+interface NewRecipeForm {
+  title: string;
+  ingredients: string;   // JSON string – e.g. '["Egg", "Flour"]'
+  steps: string;         // JSON string – e.g. '["Mix", "Bake"]'
+  description?: string;
+  cookingTime?: number;
+  image?: File;
+}
+
+type UpdateRecipeForm = Partial<NewRecipeForm>;
 ```
 
 ---
@@ -102,16 +114,29 @@ Fetches a single recipe by its unique ID.
 ### 3. Create New Recipe
 **`POST /recipes`**
 
-#### Request Body
-```json
-{
-  "title": "Spaghetti Carbonara",
-  "description": "Authentic Italian pasta",
-  "ingredients": ["Spaghetti", "Eggs", "Pecorino", "Guanciale"],
-  "steps": ["Boil water", "Fry guanciale", "Mix eggs and cheese", "Combine"],
-  "cookingTime": 20,
-  "image": "https://example.com/carbonara.jpg"
-}
+Send as `multipart/form-data`. Array fields (`ingredients`, `steps`) must be JSON-encoded strings.
+
+#### Form Fields
+| Field | Type | Required | Notes |
+| :--- | :--- | :--- | :--- |
+| `title` | `string` | Yes | |
+| `ingredients` | `string` | Yes | JSON-encoded array – `'["Egg","Flour"]'` |
+| `steps` | `string` | Yes | JSON-encoded array – `'["Mix","Bake"]'` |
+| `description` | `string` | No | |
+| `cookingTime` | `number` | No | In minutes |
+| `image` | `File` | No | jpg/jpeg/png/webp, max 5 MB |
+
+#### Example (JavaScript `fetch`)
+```js
+const form = new FormData();
+form.append('title', 'Spaghetti Carbonara');
+form.append('description', 'Authentic Italian pasta');
+form.append('ingredients', JSON.stringify(['Spaghetti', 'Eggs', 'Pecorino', 'Guanciale']));
+form.append('steps', JSON.stringify(['Boil water', 'Fry guanciale', 'Mix eggs and cheese', 'Combine']));
+form.append('cookingTime', '20');
+form.append('image', imageFile); // File object from <input type="file">
+
+fetch('/api/recipes', { method: 'POST', body: form });
 ```
 
 ---
@@ -119,13 +144,15 @@ Fetches a single recipe by its unique ID.
 ### 4. Update Recipe
 **`PUT /recipes/:id`**
 
-You can send partial updates. Only the fields included in the body will be modified.
+Send as `multipart/form-data`. All fields are optional — only included fields are updated.
 
-#### Request Body (Example: Update title only)
-```json
-{
-  "title": "Better Spaghetti Carbonara"
-}
+#### Example (JavaScript `fetch` — update title and image)
+```js
+const form = new FormData();
+form.append('title', 'Better Spaghetti Carbonara');
+form.append('image', newImageFile);
+
+fetch('/api/recipes/60d21b4667d0d8992e610c85', { method: 'PUT', body: form });
 ```
 
 ---
@@ -151,3 +178,4 @@ You can send partial updates. Only the fields included in the body will be modif
 2.  **Pagination State**: Store the `pagination` object from the response to manage your `Next` and `Previous` button states using `hasNextPage` and `hasPrevPage`.
 3.  **Loading States**: Since this is a real-world API, ensure your UI handles loading and error states gracefully using the `success` flag.
 4.  **Optimistic UI**: For `PUT` and `DELETE` actions, you can update the local UI state before the server responds for a snappier feel.
+5.  **Signed Image URLs**: The `image` field in responses is a pre-signed S3 URL valid for **24 hours**. Do not persist these URLs — always use the freshly returned URL from the API response. Re-fetch the recipe if a cached URL has expired.

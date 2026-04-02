@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Recipe } from './RecipeCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, Loader2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Loader2, GripVertical, ImagePlus, X } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -81,7 +81,7 @@ function SortableStep({ id, index, value, onChange, onRemove, disabled }: Sortab
 
 interface RecipeFormProps {
   initialData?: Partial<Recipe>;
-  onSubmit: (data: Partial<Recipe>) => Promise<void>;
+  onSubmit: (formData: FormData) => Promise<void>;
   isLoading: boolean;
   submitLabel: string;
 }
@@ -90,12 +90,30 @@ export default function RecipeForm({ initialData, onSubmit, isLoading, submitLab
   const [title, setTitle] = useState(initialData?.title || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [cookingTime, setCookingTime] = useState(initialData?.cookingTime?.toString() || '');
-  const [image, setImage] = useState(initialData?.image || '');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState(initialData?.image || '');
   const [ingredients, setIngredients] = useState<string[]>(initialData?.ingredients?.length ? initialData.ingredients : ['']);
   const [steps, setSteps] = useState<string[]>(initialData?.steps?.length ? initialData.steps : ['']);
   const [stepIds, setStepIds] = useState<string[]>(() =>
     (initialData?.steps?.length ? initialData.steps : ['']).map((_, i) => `step-${Date.now()}-${i}`)
   );
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageSelect = (file: File) => {
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleImageRemove = () => {
+    if (imageFile && imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImageFile(null);
+    setImagePreview('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -144,14 +162,16 @@ export default function RecipeForm({ initialData, onSubmit, isLoading, submitLab
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      title,
-      description,
-      cookingTime: parseInt(cookingTime) || 0,
-      image,
-      ingredients: ingredients.filter(i => i.trim() !== ''),
-      steps: steps.filter(s => s.trim() !== '')
-    });
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('cookingTime', String(parseInt(cookingTime) || 0));
+    formData.append('ingredients', JSON.stringify(ingredients.filter(i => i.trim() !== '')));
+    formData.append('steps', JSON.stringify(steps.filter(s => s.trim() !== '')));
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+    onSubmit(formData);
   };
 
   return (
@@ -199,16 +219,55 @@ export default function RecipeForm({ initialData, onSubmit, isLoading, submitLab
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="image">Image URL</Label>
-          <Input
-            type="url"
-            id="image"
-            value={image}
-            onChange={(e) => setImage(e.target.value)}
-            placeholder="https://..."
-          />
-        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Recipe Image</Label>
+        {imagePreview ? (
+          <div className="relative group rounded-xl overflow-hidden border border-border h-56">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imagePreview} alt="Recipe preview" className="object-cover w-full h-full" />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Change Image
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={handleImageRemove}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Remove
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full h-44 rounded-xl border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 bg-muted/30 hover:bg-muted/50 transition-colors flex flex-col items-center justify-center gap-2 text-muted-foreground cursor-pointer"
+          >
+            <ImagePlus className="h-8 w-8" />
+            <span className="text-sm font-medium">Click to upload an image</span>
+            <span className="text-xs">JPG, PNG, WebP up to 5MB</span>
+          </button>
+        )}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleImageSelect(file);
+          }}
+        />
       </div>
 
       <div className="border-t border-border pt-8">

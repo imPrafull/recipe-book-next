@@ -4,17 +4,16 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import RecipeForm from '@/components/RecipeForm';
-import { Recipe } from '@/components/RecipeCard';
 import { Card } from '@/components/ui/card';
 
 export default function AddRecipePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: Partial<Recipe>) => {
+  const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
     try {
-      const newRecipe = await api.createRecipe(data);
+      const newRecipe = await api.createRecipe(formData);
       router.push(`/recipes/${newRecipe.id}`);
     } catch (error) {
       console.error('Failed to create recipe:', error);

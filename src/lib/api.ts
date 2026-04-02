@@ -86,21 +86,19 @@ export const api = {
     return envelope.data;
   },
 
-  async createRecipe(data: Omit<Recipe, 'id' | 'createdAt'>): Promise<Recipe> {
+  async createRecipe(formData: FormData): Promise<Recipe> {
     const res = await fetch(RECIPE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: formData,
     });
     const envelope = await unwrap<Recipe>(res);
     return envelope.data;
   },
 
-  async updateRecipe(id: string, data: Partial<Omit<Recipe, 'id' | 'createdAt'>>): Promise<Recipe> {
+  async updateRecipe(id: string, formData: FormData): Promise<Recipe> {
     const res = await fetch(`${RECIPE_URL}/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: formData,
     });
     const envelope = await unwrap<Recipe>(res);
     return envelope.data;
