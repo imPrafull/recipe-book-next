@@ -3,33 +3,28 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import RecipeForm from '@/components/RecipeForm';
+import { Recipe } from '@/components/RecipeCard';
 import { Card } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
+import { useRecipe } from '@/hooks/use-recipe';
 
 export default function EditRecipePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const { id } = resolvedParams;
 
   const router = useRouter();
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { recipe, isLoading } = useRecipe(id, isAuthenticated);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchRecipe = async () => {
-      try {
-        const data = await api.getRecipe(id);
-        setRecipe(data);
-      } catch (error) {
-        console.error('Failed to fetch recipe:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRecipe();
-  }, [id]);
+    if (!isAuthLoading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, isAuthLoading, router]);
 
   const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
@@ -43,7 +38,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
     }
   };
 
-  if (isLoading) {
+  if (isAuthLoading || !isAuthenticated || isLoading) {
     return (
       <div className="flex justify-center items-center py-32">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />

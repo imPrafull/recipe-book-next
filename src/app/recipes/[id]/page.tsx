@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { Recipe } from '@/components/RecipeCard';
 import IngredientList from '@/components/IngredientList';
 import StepList from '@/components/StepList';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Clock, ChevronLeft, Pencil, Trash2, Loader2, ListChecks, ChefHat } from 'lucide-react';
+import { Clock, ChevronLeft, Pencil, Trash2, Loader2, ListChecks, ChefHat, Lock } from 'lucide-react';
+import AuthModal from '@/components/AuthModal';
+import { useAuth } from '@/lib/auth-context';
+import { useRecipe } from '@/hooks/use-recipe';
 import {
   Dialog,
   DialogContent,
@@ -25,25 +27,13 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
   const { id } = resolvedParams;
   
   const router = useRouter();
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated } = useAuth();
+  
+  const { recipe, isLimited, limitMessage, isLoading } = useRecipe(id, isAuthenticated);
+
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  useEffect(() => {
-    const fetchRecipe = async () => {
-      try {
-        const data = await api.getRecipe(id);
-        setRecipe(data);
-      } catch (error) {
-        console.error('Failed to fetch recipe:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRecipe();
-  }, [id]);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -118,62 +108,87 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
           </Link>
         </Button>
         <div className="flex gap-3">
-          <Button asChild variant="outline" className="shadow-sm">
-            <Link href={`/recipes/${recipe.id}/edit`}>
-              <Pencil className="h-4 w-4 mr-2 opacity-70" />
-              Edit
-            </Link>
-          </Button>
-
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="destructive" className="shadow-sm bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border-none">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+          {isAuthenticated && (
+            <>
+              <Button asChild variant="outline" className="shadow-sm">
+                <Link href={`/recipes/${recipe.id}/edit`}>
+                  <Pencil className="h-4 w-4 mr-2 opacity-70" />
+                  Edit
+                </Link>
               </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Delete Recipe</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete &quot;{recipe.title}&quot;? This action cannot be undone.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter className="gap-2 sm:gap-0">
-                <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isDeleting}>
-                  Cancel
-                </Button>
-                <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-                  {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Delete Recipe
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="destructive" className="shadow-sm bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border-none">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Delete Recipe</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to delete &quot;{recipe.title}&quot;? This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter className="gap-2 sm:gap-0">
+                    <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isDeleting}>
+                      Cancel
+                    </Button>
+                    <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                      {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Delete Recipe
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <div className="lg:col-span-1">
-          <div className="sticky top-24">
+      {isLimited ? (
+        <Card className="flex flex-col items-center justify-center p-12 text-center bg-muted/30 border-dashed mb-12">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+            <Lock className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold mb-3">{limitMessage || 'Login to unlock full recipe'}</h2>
+          <p className="text-muted-foreground mb-6 max-w-md">
+            Get access to detailed ingredient lists and step-by-step cooking instructions by logging into your account.
+          </p>
+          <Button size="lg" onClick={() => setIsAuthModalOpen(true)}>
+            Unlock Recipe
+          </Button>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="lg:col-span-1">
+            <div className="sticky top-24">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <ListChecks className="h-6 w-6 text-primary" />
+                Ingredients
+              </h2>
+              <IngredientList ingredients={recipe.ingredients || []} />
+            </div>
+          </div>
+          
+          <div className="lg:col-span-2">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <ListChecks className="h-6 w-6 text-primary" />
-              Ingredients
+              <ChefHat className="h-6 w-6 text-secondary" />
+              Instructions
             </h2>
-            <IngredientList ingredients={recipe.ingredients || []} />
+            <Card className="p-8 rounded-xl overflow-hidden">
+              <StepList steps={recipe.steps || []} />
+            </Card>
           </div>
         </div>
-        
-        <div className="lg:col-span-2">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <ChefHat className="h-6 w-6 text-secondary" />
-            Instructions
-          </h2>
-          <Card className="p-8 rounded-xl overflow-hidden">
-            <StepList steps={recipe.steps || []} />
-          </Card>
-        </div>
-      </div>
+      )}
+
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        message={limitMessage || "Sign in to view full ingredients and instructions."}
+      />
     </div>
   );
 }

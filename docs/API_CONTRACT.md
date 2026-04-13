@@ -10,9 +10,11 @@ This document outlines the API endpoints, request/response formats, and integrat
 ## Global Standards
 
 ### Request Headers
-- For `GET` and `DELETE` requests, no special headers are required.
-- For `POST /recipes` and `PUT /recipes/:id`, use `Content-Type: multipart/form-data` (the request includes a file upload).
-- For any other `POST` or `PUT` requests, use `Content-Type: application/json`.
+- **Authentication**: For authenticated requests, include `Authorization: Bearer <JWT_TOKEN>`.
+- For `GET` requests, headers are optional. If no token is provided (or if it's invalid), the API treats the requester as a **Guest**.
+- For `POST /recipes`, `PUT /recipes/:id`, and `DELETE /recipes/:id`, a valid JWT is **required**.
+- For `POST` and `PUT` with file uploads, use `Content-Type: multipart/form-data`.
+- For other `POST` or `PUT` requests, use `Content-Type: application/json`.
 
 ### Success Response Envelope
 All successful requests return a `200 OK` (or `201 Created`) with the following shape:
@@ -20,6 +22,8 @@ All successful requests return a `200 OK` (or `201 Created`) with the following 
 interface SuccessResponse<T> {
   success: true;
   data: T;
+  isLimited?: boolean;      // true if content is restricted for guest users
+  message?: string;        // explanation message (e.g., "Login to see more")
   pagination?: {
     page: number;
     limit: number;
@@ -32,150 +36,251 @@ interface SuccessResponse<T> {
 ```
 
 ### Error Response Envelope
-Failed requests return an appropriate HTTP status code (400, 404, 500) with this shape:
+Failed requests return an appropriate HTTP status code (400, 401, 404, 500) with this shape:
 ```typescript
 interface ErrorResponse {
   success: false;
   error: string; // Human-readable error message
+  code?: string; // Machine-readable error code (e.g., "TOKEN_EXPIRED")
 }
 ```
+
+---
+
+## Authentication & Guest Access
+
+The API uses a dual-token system for security and user experience:
+
+1.  **Access Token**: Short-lived (e.g., 15m). Include in `Authorization: Bearer <token>` header.
+2.  **Refresh Token**: Long-lived (e.g., 7d). Used to obtain new access/refresh pairs.
+
+### 1. Guest Users (Unauthenticated)
+- **Identification**: No `Authorization` header provided or invalid token.
+- **Recipe List**: Limited to the **first page** (maximum 10 results). Subsequent pages return a limited response.
+- **Recipe Details**: `ingredients` and `steps` arrays are **omitted**.
+- **Search**: Results are limited to 10 items.
+- **Action**: Cannot Create, Update, or Delete recipes.
+
+### 2. Authenticated Users
+- **Identification**: Valid `Authorization: Bearer <token>` header.
+- **Full Access**: No pagination limits, full recipe details, full search results.
+- **Actions**: Full CRUD capabilities.
+
+### 3. Token Expiration Logic
+When an access token expires, the server returns a `401 Unauthorized` response with a specific error code:
+```json
+{
+  "success": false,
+  "error": "Access token expired. Please refresh your token.",
+  "code": "TOKEN_EXPIRED"
+}
+```
+The frontend should check for `code === "TOKEN_EXPIRED"` and call the `/auth/refresh` endpoint to get new tokens before retrying the original request.
 
 ---
 
 ## Data Models (TypeScript Interfaces)
 
 ```typescript
-interface Recipe {
-  id: string;            // Unique identifier
-  title: string;         // Recipe name
-  description: string;   // Short summary
-  ingredients: string[]; // List of ingredients
-  steps: string[];       // Step-by-step instructions
-  cookingTime: number;   // In minutes
-  image: string;         // Pre-signed S3 URL, valid for 24 hours
-  createdAt: string;     // ISO Date string
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar: string;
+  bio: string;
+  socialLinks: {
+    website: string;
+    twitter: string;
+    instagram: string;
+    facebook: string;
+  };
+  createdAt: string;
 }
 
-// For POST / PUT, send as multipart/form-data.
-// `image` is an optional file field (jpg/jpeg/png/webp, max 5 MB).
-// `ingredients` and `steps` must be JSON-encoded strings in the form body.
+interface Recipe {
+  id: string;
+  title: string;
+  description: string;
+  cookingTime: number;
+  image: string;         // Pre-signed S3 URL
+  createdAt: string;
+  // Note: guest users will NOT receive these fields or they will be empty
+  ingredients?: string[]; 
+  steps?: string[];
+}
+
+interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+// For POST / PUT (Authenticated Only)
 interface NewRecipeForm {
   title: string;
-  ingredients: string;   // JSON string – e.g. '["Egg", "Flour"]'
-  steps: string;         // JSON string – e.g. '["Mix", "Bake"]'
+  ingredients: string;   // JSON string array
+  steps: string;         // JSON string array
   description?: string;
   cookingTime?: number;
   image?: File;
 }
-
-type UpdateRecipeForm = Partial<NewRecipeForm>;
 ```
 
 ---
 
 ## Endpoints
 
-### 1. List & Search Recipes
+### 1. Authentication Endpoints
+
+#### **`POST /auth/signup`**
+Create a new user account.
+
+- **Body**:
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "strongpassword123",
+    "name": "Jane Doe"
+  }
+  ```
+- **Response `201 Created`**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "user": User,
+      "accessToken": "...",
+      "refreshToken": "..."
+    }
+  }
+  ```
+
+---
+
+#### **`POST /auth/login`**
+Authenticate an existing user.
+
+- **Body**:
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "strongpassword123"
+  }
+  ```
+- **Response `200 OK`**: Same as Signup.
+
+---
+
+#### **`GET /auth/me` (Protected)**
+Get current user profile.
+
+- **Response `200 OK`**: `SuccessResponse<{ user: User }>`
+
+---
+
+#### **`PATCH /auth/me` (Protected)**
+Update current user profile.
+
+- **Body (Partial)**:
+  ```json
+  {
+    "name": "Updated Name",
+    "bio": "Passionate cook!",
+    "avatar": "https://...",
+    "socialLinks": {
+      "twitter": "@handle"
+    }
+  }
+  ```
+- **Response `200 OK`**: `SuccessResponse<{ user: User }>`
+
+---
+
+#### **`POST /auth/logout`**
+Log out the current user.
+
+- **Response `200 OK`**: `{ "success": true, "data": { "message": "Logged out successfully" } }`
+
+---
+
+#### **`POST /auth/refresh`**
+Exchange a valid refresh token for a new access and refresh token pair (token rotation).
+
+- **Body**: `{ "refreshToken": "string" }`
+- **Response `200 OK`**: `SuccessResponse<AuthTokens>`
+
+---
+
+### 2. List & Search Recipes
 **`GET /recipes`**
 
-Use this to fetch the main grid of recipes. Supports pagination and keyword search.
+#### Access Rules:
+- **Guest**: Returns `isLimited: true` and `message: "Login to see more recipes"` if `page > 1` or if results are capped.
+- **Authenticated**: Returns full paginated results.
 
 #### Query Parameters
 | Parameter | Type   | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `page` | `number` | `1` | Current page |
-| `limit` | `number` | `10` | Items per page (Max 100) |
-| `search` | `string` | `""` | Search in **title**, **description**, or **ingredients** |
-
-#### Example Fetch
-`GET /api/recipes?search=pasta&page=1&limit=6`
+| `limit` | `number` | `10` | Items per page |
+| `search` | `string` | `""` | Keyword search |
 
 ---
 
-### 2. Get Recipe Details
+### 3. Get Recipe Details
 **`GET /recipes/:id`**
 
-Fetches a single recipe by its unique ID.
+#### Access Rules:
+- **Guest**: `ingredients` and `steps` are hidden. Returns `isLimited: true`.
+- **Authenticated**: Returns full recipe object.
 
-#### Response `200 OK`
+#### Response `200 OK` (Guest Example)
 ```json
 {
   "success": true,
   "data": {
     "id": "60d21b4667d0d8992e610c85",
     "title": "Classic Margherita Pizza",
-    ...
-  }
+    "description": "The quintessential pizza...",
+    "cookingTime": 15,
+    "image": "https://...",
+    "createdAt": "2024-03-20T..."
+  },
+  "isLimited": true,
+  "message": "Login to see full ingredients and steps"
 }
 ```
 
 ---
 
-### 3. Create New Recipe
+### 4. Create New Recipe (AUTH REQUIRED)
 **`POST /recipes`**
 
-Send as `multipart/form-data`. Array fields (`ingredients`, `steps`) must be JSON-encoded strings.
-
-#### Form Fields
-| Field | Type | Required | Notes |
-| :--- | :--- | :--- | :--- |
-| `title` | `string` | Yes | |
-| `ingredients` | `string` | Yes | JSON-encoded array – `'["Egg","Flour"]'` |
-| `steps` | `string` | Yes | JSON-encoded array – `'["Mix","Bake"]'` |
-| `description` | `string` | No | |
-| `cookingTime` | `number` | No | In minutes |
-| `image` | `File` | No | jpg/jpeg/png/webp, max 5 MB |
-
-#### Example (JavaScript `fetch`)
-```js
-const form = new FormData();
-form.append('title', 'Spaghetti Carbonara');
-form.append('description', 'Authentic Italian pasta');
-form.append('ingredients', JSON.stringify(['Spaghetti', 'Eggs', 'Pecorino', 'Guanciale']));
-form.append('steps', JSON.stringify(['Boil water', 'Fry guanciale', 'Mix eggs and cheese', 'Combine']));
-form.append('cookingTime', '20');
-form.append('image', imageFile); // File object from <input type="file">
-
-fetch('/api/recipes', { method: 'POST', body: form });
-```
+Requires valid JWT. Send as `multipart/form-data`.
 
 ---
 
-### 4. Update Recipe
+### 5. Update Recipe (AUTH REQUIRED)
 **`PUT /recipes/:id`**
 
-Send as `multipart/form-data`. All fields are optional — only included fields are updated.
-
-#### Example (JavaScript `fetch` — update title and image)
-```js
-const form = new FormData();
-form.append('title', 'Better Spaghetti Carbonara');
-form.append('image', newImageFile);
-
-fetch('/api/recipes/60d21b4667d0d8992e610c85', { method: 'PUT', body: form });
-```
+Requires valid JWT. Send as `multipart/form-data`.
 
 ---
 
-### 5. Delete Recipe
+### 6. Delete Recipe (AUTH REQUIRED)
 **`DELETE /recipes/:id`**
 
-#### Response `200 OK`
-```json
-{
-  "success": true,
-  "data": {
-    "message": "Recipe deleted successfully"
-  }
-}
-```
+Requires valid JWT.
 
 ---
 
 ## Frontend Integration Tips
 
-1.  **Search Debouncing**: When implementing the search bar, use a debounce (e.g., 300ms) to avoid hitting the API on every keystroke.
-2.  **Pagination State**: Store the `pagination` object from the response to manage your `Next` and `Previous` button states using `hasNextPage` and `hasPrevPage`.
-3.  **Loading States**: Since this is a real-world API, ensure your UI handles loading and error states gracefully using the `success` flag.
-4.  **Optimistic UI**: For `PUT` and `DELETE` actions, you can update the local UI state before the server responds for a snappier feel.
-5.  **Signed Image URLs**: The `image` field in responses is a pre-signed S3 URL valid for **24 hours**. Do not persist these URLs — always use the freshly returned URL from the API response. Re-fetch the recipe if a cached URL has expired.
+1.  **Auth State**: Check `isLimited` in responses to decide when to show the "Sign in to unlock full access 🍳" modal.
+2.  **Auth Interceptor**: Implement an Axios/Fetch interceptor that:
+    *   Attaches the `accessToken` to every request.
+    *   If a `401` occurs with `code: TOKEN_EXPIRED`, calls `/auth/refresh`.
+    *   Updates the tokens in storage and retries the original request.
+    *   If refresh fails (refresh token expired), logs the user out.
+3.  **JWT Persistence**: Store `accessToken` and `refreshToken` in `localStorage` or a secure cookie.
+4.  **Fallback UI**: For guest users, show a preview of recipes but blur or hide the sections for steps/ingredients with a CTA to log in.
+5.  **Signed URLs**: Image URLs are temporary (24h). Always use the URL from the latest API response.

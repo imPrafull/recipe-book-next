@@ -1,14 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import RecipeForm from '@/components/RecipeForm';
 import { Card } from '@/components/ui/card';
 
 export default function AddRecipePage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthLoading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthLoading, isAuthenticated, router]);
 
   const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
@@ -21,6 +29,14 @@ export default function AddRecipePage() {
       setIsSubmitting(false);
     }
   };
+
+  if (isAuthLoading || !isAuthenticated) {
+    return (
+      <div className="flex justify-center items-center py-32">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-8 mb-16 px-4">
