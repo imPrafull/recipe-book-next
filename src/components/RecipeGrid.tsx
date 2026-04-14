@@ -20,10 +20,20 @@ export default function RecipeGrid({ recipes }: RecipeGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {recipes.map((recipe) => (
-        <RecipeCard key={recipe.id} recipe={recipe} />
-      ))}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-[minmax(0,1fr)]">
+      {recipes.map((recipe, index) => {
+        // Every 4th item breaks the grid by spanning 2 columns (except on very small screens)
+        const isLarge = index % 5 === 0 && recipes.length > 2;
+        
+        return (
+          <div 
+            key={recipe.id} 
+            className={`${isLarge ? "sm:col-span-2 sm:row-span-2" : ""} transition-all duration-300`}
+          >
+            <RecipeCard recipe={recipe} />
+          </div>
+        );
+      })}
     </div>
   );
 }
