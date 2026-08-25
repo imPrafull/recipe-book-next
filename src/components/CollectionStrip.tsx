@@ -13,9 +13,9 @@ export default function CollectionStrip({ currentRecipeId }: CollectionStripProp
 
   if (isLoading) {
     return (
-      <div className="mt-20 pt-10 border-t border-border">
-        <h3 className="text-2xl font-bold tracking-tight mb-8">You might also like</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="mt-12 pt-8 border-t border-border/60">
+        <h3 className="text-xl font-bold tracking-tight mb-6 text-foreground">You might also like</h3>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-64 bg-muted animate-pulse rounded-xl"></div>
           ))}
@@ -31,9 +31,9 @@ export default function CollectionStrip({ currentRecipeId }: CollectionStripProp
   if (relatedRecipes.length === 0) return null;
 
   return (
-    <div className="mt-20 pt-10 border-t border-border">
-      <h3 className="text-2xl font-bold tracking-tight mb-8">You might also like</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+    <div className="mt-12 pt-8 border-t border-border/60">
+      <h3 className="text-xl font-bold tracking-tight mb-6 text-foreground">You might also like</h3>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-6">
         {relatedRecipes.map((recipe) => (
           <RecipeCard key={recipe.id} recipe={recipe} />
         ))}

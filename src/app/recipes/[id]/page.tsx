@@ -74,9 +74,10 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
   const imgUrl = recipe.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200&q=80';
 
   return (
-    <div className="py-8 pb-20 max-w-7xl mx-auto px-4 lg:px-8">
-      <div className="flex items-center gap-4 mb-8">
-        <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground">
+    <div className="py-6 sm:py-8 pb-20 max-w-7xl mx-auto px-4 lg:px-8">
+      {/* Back to Library - Shown ONLY on mobile/tablet, hidden on large screens (desktop) */}
+      <div className="flex items-center gap-4 mb-6 lg:hidden">
+        <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground -ml-2">
           <Link href="/">
             <ChevronLeft className="h-5 w-5 mr-1" />
             Back to Library
@@ -84,12 +85,12 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
         </Button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-12 xl:gap-16">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 xl:gap-16">
         
-        {/* Left Column: Sticky Anchor */}
+        {/* Left Column: Recipe Image & Description */}
         <div className="w-full lg:w-5/12 xl:w-1/2">
-          <div className="lg:sticky lg:top-24 space-y-6">
-            <div className="relative rounded-2xl overflow-hidden aspect-[4/3] md:aspect-[16/9] lg:aspect-square shadow-xl ring-1 ring-border/50">
+          <div className="space-y-6">
+            <div className="relative rounded-2xl overflow-hidden aspect-[16/10] sm:aspect-[16/9] lg:aspect-[4/3] shadow-lg ring-1 ring-border/50">
               <img 
                 src={imgUrl} 
                 alt={recipe.title} 
@@ -97,63 +98,82 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
               />
             </div>
             
-            <div className="pt-4">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter mb-4 leading-none text-foreground">
+            <div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight mb-3 leading-tight text-foreground">
                 {recipe.title}
               </h1>
               
               <RecipeMetaBar cookingTime={recipe.cookingTime} />
               
-              <p className="text-lg text-muted-foreground leading-relaxed italic border-l-4 border-primary/20 pl-4 my-6">
+              {/* Compact Icon Action Bar with Tooltips */}
+              <div className="flex items-center gap-3 my-5">
+                <ActionButtons />
+                
+                {isAuthenticated && (
+                  <>
+                    <div className="w-px h-6 bg-border mx-1"></div>
+                    
+                    {/* Edit Button */}
+                    <div className="relative group">
+                      <Button asChild variant="outline" className="w-10 h-10 rounded-full p-0 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-all">
+                        <Link href={`/recipes/${recipe.id}/edit`}>
+                          <Pencil className="h-4.5 w-4.5 text-primary" />
+                        </Link>
+                      </Button>
+                      <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2.5 py-1 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 font-medium">
+                        Edit Recipe
+                      </span>
+                    </div>
+
+                    {/* Delete Button */}
+                    <div className="relative group">
+                      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="w-10 h-10 rounded-full p-0 flex items-center justify-center text-destructive hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-all">
+                            <Trash2 className="h-4.5 w-4.5" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <DialogHeader>
+                            <DialogTitle>Delete Recipe</DialogTitle>
+                            <DialogDescription>
+                              Are you sure you want to delete &quot;{recipe.title}&quot;? This action cannot be undone.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter className="gap-2 sm:gap-0">
+                            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isDeleting}>
+                              Cancel
+                            </Button>
+                            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                              Delete Recipe
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                      <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2.5 py-1 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 font-medium">
+                        Delete Recipe
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed italic border-l-4 border-primary/40 pl-4 my-5">
                 &quot;{recipe.description}&quot;
               </p>
 
-              <ActionButtons />
-
-              {isAuthenticated && (
-                <div className="flex gap-3 pt-6 border-t border-border/60">
-                  <Button asChild variant="ghost" className="text-muted-foreground">
-                    <Link href={`/recipes/${recipe.id}/edit`}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit this recipe
-                    </Link>
-                  </Button>
-
-                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Delete Recipe</DialogTitle>
-                        <DialogDescription>
-                          Are you sure you want to delete &quot;{recipe.title}&quot;? This action cannot be undone.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <DialogFooter className="gap-2 sm:gap-0">
-                        <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isDeleting}>
-                          Cancel
-                        </Button>
-                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-                          {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                          Delete Recipe
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
+              {!isLimited && (
+                <CollectionStrip currentRecipeId={recipe.id} />
               )}
             </div>
           </div>
         </div>
 
-        {/* Right Column: Scrollable Instructions */}
-        <div className="w-full lg:w-7/12 xl:w-1/2 pt-4 lg:pt-0">
+        {/* Right Column: Ingredients & Instructions */}
+        <div className="w-full lg:w-7/12 xl:w-1/2 space-y-8 lg:pt-0">
           {isLimited ? (
-            <div className="relative rounded-3xl overflow-hidden border border-border/50 bg-card">
+            <div className="relative rounded-xl overflow-hidden border border-border/50 bg-card">
               {/* Blurred skeleton content representing ingredients/steps */}
               <div className="p-8 lg:p-12 filter blur-md opacity-40 select-none pointer-events-none">
                 <h2 className="text-2xl font-bold mb-6">Ingredients</h2>
@@ -182,7 +202,7 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
 
               {/* Lock CTA Overlay */}
               <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-background/30 backdrop-blur-[2px]">
-                <div className="bg-background/95 border border-border p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center">
+                <div className="bg-background/95 border border-border p-8 rounded-xl shadow-2xl max-w-sm w-full text-center">
                   <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
                     <Lock className="w-8 h-8 text-primary" />
                   </div>
@@ -197,31 +217,27 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
           ) : (
-            <div className="space-y-16">
+            <div className="space-y-12">
               <section>
-                <h2 className="text-2xl md:text-3xl font-bold mb-8 flex items-center gap-3 tracking-tight">
+                <h2 className="text-2xl md:text-3xl font-bold mb-6 flex items-center gap-3 tracking-tight">
                   <ListChecks className="h-7 w-7 text-primary" />
-                  What you'll need
+                  What you&apos;ll need
                 </h2>
-                <div className="bg-card p-6 md:p-8 rounded-3xl shadow-sm border border-border/50">
+                <div className="bg-card p-5 md:p-6 rounded-2xl shadow-xs border border-border/60">
                   <IngredientChecklist ingredients={recipe.ingredients || []} />
                 </div>
               </section>
               
               <section>
-                <h2 className="text-2xl md:text-3xl font-bold mb-8 flex items-center gap-3 tracking-tight">
+                <h2 className="text-2xl md:text-3xl font-bold mb-6 flex items-center gap-3 tracking-tight">
                   <ChefHat className="h-7 w-7 text-secondary" />
                   How to make it
                 </h2>
-                <div className="bg-card p-6 md:p-10 rounded-3xl shadow-sm border border-border/50">
+                <div className="bg-card p-5 md:p-6 rounded-2xl shadow-xs border border-border/60">
                   <StepBlock steps={recipe.steps || []} />
                 </div>
               </section>
             </div>
-          )}
-
-          {!isLimited && (
-            <CollectionStrip currentRecipeId={recipe.id} />
           )}
         </div>
       </div>

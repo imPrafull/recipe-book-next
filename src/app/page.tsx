@@ -39,22 +39,14 @@ export default function Home({ searchParams }: { searchParams: Promise<{ search?
           <p className="text-lg text-muted-foreground font-medium">Curated recipes for the modern kitchen.</p>
         </div>
       </div>
+      <div className="mb-8">
+        <CategoryPills />
+      </div>
       
-      <CategoryPills />
-      
-      {isLoading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      ) : (
+      {recipes.length > 0 && (
         <>
-          {recipes.length > 0 && (
-            <FeaturedRecipe recipe={recipes[0]} />
-          )}
-
-          {recipes.length > 0 && (
-            <FavouritesTeaser />
-          )}
+          <FeaturedRecipe recipe={recipes[0]} />
+          <FavouritesTeaser />
 
           <div className="mb-6 mt-12 flex justify-between items-center gap-4">
             <h2 className="text-2xl font-bold tracking-tight">
@@ -68,9 +60,14 @@ export default function Home({ searchParams }: { searchParams: Promise<{ search?
             </Button>
           </div>
 
-          <RecipeGrid recipes={recipes.length > 0 ? recipes.slice(1, 6) : recipes} />
+          <RecipeGrid 
+            recipes={recipes.slice(1, 6)} 
+            isLoading={isLoading} 
+            layout="simple" 
+          />
         </>
       )}
+
     </div>
   );
 }

@@ -6,6 +6,7 @@ export function useRecipes(params: GetRecipesParams) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalRecipes, setTotalRecipes] = useState(0);
   const [isLimited, setIsLimited] = useState(false);
   const [limitMessage, setLimitMessage] = useState('');
 
@@ -18,6 +19,7 @@ export function useRecipes(params: GetRecipesParams) {
         if (active) {
           setRecipes(Array.isArray(result.recipes) ? result.recipes : []);
           setTotalPages(result.pagination?.totalPages || 1);
+          setTotalRecipes(result.pagination?.total || 0);
           setIsLimited(!!result.isLimited);
           setLimitMessage(result.message || '');
         }
@@ -32,5 +34,5 @@ export function useRecipes(params: GetRecipesParams) {
     return () => { active = false; };
   }, [params.search, params.page, params.limit]);
 
-  return { recipes, totalPages, isLimited, limitMessage, isLoading };
+  return { recipes, totalPages, totalRecipes, isLimited, limitMessage, isLoading };
 }
