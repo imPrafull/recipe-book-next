@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
@@ -29,13 +29,22 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
   const { id } = resolvedParams;
   
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   
   const { recipe, isLimited, limitMessage, isLoading } = useRecipe(id, isAuthenticated);
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Fallback: If recipe is limited but auth context says authenticated, it means tokens are stale
+  // Clear auth state to sync UI with API
+  useEffect(() => {
+    if (isLimited && isAuthenticated && !isLoading) {
+      console.warn('Auth state mismatch detected: recipe is limited but auth context is authenticated. Clearing stale auth state.');
+      logout();
+    }
+  }, [isLimited, isAuthenticated, isLoading, logout]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -159,12 +168,16 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
                 )}
               </div>
               
-              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed italic border-l-4 border-primary/40 pl-4 my-5">
-                &quot;{recipe.description}&quot;
-              </p>
+              {recipe.description && (
+                <p className="text-base sm:text-lg text-muted-foreground leading-relaxed italic border-l-4 border-primary/40 pl-4 my-5">
+                  &quot;{recipe.description}&quot;
+                </p>
+              )}
 
               {!isLimited && (
-                <CollectionStrip currentRecipeId={recipe.id} />
+                <div className="hidden lg:block">
+                  <CollectionStrip currentRecipeId={recipe.id} />
+                </div>
               )}
             </div>
           </div>
@@ -241,6 +254,13 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
           )}
         </div>
       </div>
+
+      {/* You might also like section - displayed at end on mobile/tablet */}
+      {!isLimited && (
+        <div className="lg:hidden mt-12">
+          <CollectionStrip currentRecipeId={recipe.id} />
+        </div>
+      )}
 
       <AuthModal 
         isOpen={isAuthModalOpen} 
