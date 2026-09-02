@@ -4,17 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Clock, Lock, Heart, ChefHat } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import type { Recipe } from '@/lib/types';
 
-export interface Recipe {
-  id: string;
-  title: string;
-  description: string;
-  cookingTime: number;
-  image: string;
-  ingredients?: string[];
-  steps?: string[];
-  isLocked?: boolean; // Contextual prop for guest lock
-}
+export type { Recipe };
 
 interface RecipeCardProps {
   recipe: Recipe;

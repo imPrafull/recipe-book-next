@@ -1,4 +1,4 @@
-import { Recipe } from '@/components/RecipeCard';
+import { Recipe } from '@/lib/types';
 import { getRecipes, addRecipe, parseRecipeForm } from '@/lib/recipe-store';
 
 export async function GET(request: Request) {
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       r =>
         r.title.toLowerCase().includes(q) ||
         r.description.toLowerCase().includes(q) ||
-        r.ingredients?.some(i => i.toLowerCase().includes(q))
+        r.ingredients?.some(i => i.name.toLowerCase().includes(q))
     );
   }
 
