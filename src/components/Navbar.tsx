@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import SearchBar from './SearchBar';
 import { Button } from '@/components/ui/button';
-import { Plus, BookOpen, LogOut, LogIn, UserPlus } from 'lucide-react';
+import { Plus, BookOpen, LogOut, LogIn, UserPlus, Calendar } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 export default function Navbar() {
@@ -22,6 +22,17 @@ export default function Navbar() {
               <span className="font-extrabold text-2xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary group-hover:from-primary/80 group-hover:to-secondary/80 transition-all duration-300 drop-shadow-sm">
                 Recipe Book
               </span>
+            </Link>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="hidden md:flex items-center gap-1 ml-8">
+            <Link
+              href="/meal-planner"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200"
+            >
+              <Calendar className="h-4 w-4" />
+              <span>Meal Planner</span>
             </Link>
           </div>
 

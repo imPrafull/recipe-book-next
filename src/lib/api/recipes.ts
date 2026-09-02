@@ -1,5 +1,5 @@
 import { API_BASE, fetchWithAuth, unwrap, PaginationMeta } from '../api-client';
-import { Recipe } from '@/components/RecipeCard';
+import type { Recipe } from '@/lib/types';
 
 const RECIPE_ENDPOINT = `/recipes`;
 const RECIPE_URL = `${API_BASE}${RECIPE_ENDPOINT}`;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { Recipe } from '@/components/RecipeCard';
 
 export function useRecipe(id: string, isAuthenticated: boolean) {
@@ -7,9 +8,12 @@ export function useRecipe(id: string, isAuthenticated: boolean) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLimited, setIsLimited] = useState(false);
   const [limitMessage, setLimitMessage] = useState('');
+  const { isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!id) return;
+    
+    if (authLoading) return;
 
     let active = true;
     const fetchRecipe = async () => {
@@ -30,7 +34,7 @@ export function useRecipe(id: string, isAuthenticated: boolean) {
 
     fetchRecipe();
     return () => { active = false; };
-  }, [id, isAuthenticated]);
+  }, [id, isAuthenticated, authLoading]);
 
   return { recipe, isLimited, limitMessage, isLoading };
 }

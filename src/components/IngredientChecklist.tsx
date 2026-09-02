@@ -2,9 +2,28 @@
 
 import { useState } from 'react';
 import { Check, RotateCcw } from 'lucide-react';
+import type { Ingredient } from '@/lib/types';
+import { formatQuantity } from '@/lib/utils';
 
 interface IngredientChecklistProps {
-  ingredients: string[];
+  ingredients: Ingredient[];
+}
+
+/** Builds the human-readable label for a single ingredient row. */
+function buildLabel(ingredient: Ingredient): { main: string; notes?: string } {
+  const { name, quantity, unit, notes } = ingredient;
+  const qtyStr = formatQuantity(quantity);
+
+  let main = name;
+  if (qtyStr && unit) {
+    main = `${name} - ${qtyStr} ${unit}`;
+  } else if (qtyStr) {
+    main = `${name} - ${qtyStr}`;
+  } else if (unit) {
+    main = `${name} - ${unit}`;
+  }
+
+  return { main, notes: notes || undefined };
 }
 
 export default function IngredientChecklist({ ingredients }: IngredientChecklistProps) {
@@ -68,9 +87,10 @@ export default function IngredientChecklist({ ingredients }: IngredientChecklist
       <div className="grid grid-cols-1 gap-2.5 pt-1">
         {ingredients.map((ingredient, index) => {
           const isChecked = checkedItems.has(index);
+          const { main, notes } = buildLabel(ingredient);
           return (
             <button
-              key={index}
+              key={ingredient.id}
               type="button"
               onClick={() => toggleItem(index)}
               className={`w-full group flex items-center gap-3.5 p-3.5 rounded-xl border transition-all duration-200 text-left cursor-pointer ${
@@ -95,7 +115,12 @@ export default function IngredientChecklist({ ingredients }: IngredientChecklist
                     : 'text-foreground font-medium group-hover:text-foreground'
                 }`}
               >
-                {ingredient}
+                {main}
+                {notes && (
+                  <span className="text-muted-foreground text-xs">
+                    {', '}{notes}
+                  </span>
+                )}
               </span>
             </button>
           );
@@ -104,4 +129,3 @@ export default function IngredientChecklist({ ingredients }: IngredientChecklist
     </div>
   );
 }
-

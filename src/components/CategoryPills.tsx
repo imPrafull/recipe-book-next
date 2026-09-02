@@ -72,7 +72,7 @@ function CategoryPillsContent() {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute left-0 top-[38%] -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-muted/60 hover:bg-muted transition-colors disabled:opacity-50"
+          className="absolute left-0 top-[38%] -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-muted hover:bg-muted transition-colors disabled:opacity-50"
           onClick={() => scroll('left')}
         >
           <ChevronLeft className="h-4 w-4" />
@@ -111,7 +111,7 @@ function CategoryPillsContent() {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute right-0 top-[38%] -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-muted/60 hover:bg-muted transition-colors disabled:opacity-50"
+          className="absolute right-0 top-[38%] -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-muted hover:bg-muted transition-colors disabled:opacity-50"
           onClick={() => scroll('right')}
         >
           <ChevronRight className="h-4 w-4" />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
@@ -9,6 +9,7 @@ import { ChevronLeft, Pencil, Trash2, Loader2, ListChecks, ChefHat, Lock } from 
 import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/lib/auth-context';
 import { useRecipe } from '@/hooks/use-recipe';
+import { useCookMode } from '@/hooks/use-cook-mode';
 import RecipeMetaBar from '@/components/RecipeMetaBar';
 import IngredientChecklist from '@/components/IngredientChecklist';
 import StepBlock from '@/components/StepBlock';
@@ -29,13 +30,23 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
   const { id } = resolvedParams;
   
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   
   const { recipe, isLimited, limitMessage, isLoading } = useRecipe(id, isAuthenticated);
+  const cookMode = useCookMode(recipe?.steps);
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Fallback: If recipe is limited but auth context says authenticated, it means tokens are stale
+  // Clear auth state to sync UI with API
+  useEffect(() => {
+    if (isLimited && isAuthenticated && !isLoading) {
+      console.warn('Auth state mismatch detected: recipe is limited but auth context is authenticated. Clearing stale auth state.');
+      logout();
+    }
+  }, [isLimited, isAuthenticated, isLoading, logout]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -109,6 +120,32 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
               <div className="flex items-center gap-3 my-5">
                 <ActionButtons />
                 
+                {/* Cook Mode Toggle - Available to all users */}
+                {!isLimited && (
+                  <>
+                    <div className="w-px h-6 bg-border mx-1"></div>
+                    
+                    <div className="relative group">
+                      <Button 
+                        variant={cookMode.isCookMode ? "default" : "outline"}
+                        className={`w-10 h-10 rounded-full p-0 flex items-center justify-center transition-all ${
+                          cookMode.isCookMode 
+                            ? 'bg-primary hover:bg-primary/90 shadow-md' 
+                            : 'hover:border-primary/50 hover:bg-primary/5'
+                        }`}
+                        onClick={cookMode.toggleCookMode}
+                        aria-pressed={cookMode.isCookMode}
+                        aria-label={cookMode.isCookMode ? "Exit cook mode" : "Start cook mode"}
+                      >
+                        <ChefHat className={`h-4.5 w-4.5 ${cookMode.isCookMode ? 'text-primary-foreground' : 'text-primary'}`} />
+                      </Button>
+                      <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2.5 py-1 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 font-medium">
+                        {cookMode.isCookMode ? 'Exit Cook Mode' : 'Start Cooking'}
+                      </span>
+                    </div>
+                  </>
+                )}
+                
                 {isAuthenticated && (
                   <>
                     <div className="w-px h-6 bg-border mx-1"></div>
@@ -159,12 +196,16 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
                 )}
               </div>
               
-              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed italic border-l-4 border-primary/40 pl-4 my-5">
-                &quot;{recipe.description}&quot;
-              </p>
+              {recipe.description && (
+                <p className="text-base sm:text-lg text-muted-foreground leading-relaxed italic border-l-4 border-primary/40 pl-4 my-5">
+                  &quot;{recipe.description}&quot;
+                </p>
+              )}
 
               {!isLimited && (
-                <CollectionStrip currentRecipeId={recipe.id} />
+                <div className="hidden lg:block">
+                  <CollectionStrip currentRecipeId={recipe.id} />
+                </div>
               )}
             </div>
           </div>
@@ -234,13 +275,29 @@ export default function RecipeDetailsPage({ params }: { params: Promise<{ id: st
                   How to make it
                 </h2>
                 <div className="bg-card p-5 md:p-6 rounded-2xl shadow-xs border border-border/60">
-                  <StepBlock steps={recipe.steps || []} />
+                  <StepBlock 
+                    steps={recipe.steps || []}
+                    isCookMode={cookMode.isCookMode}
+                    completedSteps={cookMode.completedSteps}
+                    onToggleStep={cookMode.toggleStep}
+                    onResetSteps={cookMode.resetAllSteps}
+                    completedCount={cookMode.completedCount}
+                    totalCount={cookMode.totalSteps}
+                    progressPercent={cookMode.progressPercent}
+                  />
                 </div>
               </section>
             </div>
           )}
         </div>
       </div>
+
+      {/* You might also like section - displayed at end on mobile/tablet */}
+      {!isLimited && (
+        <div className="lg:hidden mt-12">
+          <CollectionStrip currentRecipeId={recipe.id} />
+        </div>
+      )}
 
       <AuthModal 
         isOpen={isAuthModalOpen} 
