@@ -1,4 +1,4 @@
-import { Recipe } from '@/components/RecipeCard';
+import { Recipe } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
 // In-memory recipe store (shared across all API route handlers)
@@ -14,12 +14,12 @@ let recipes: Recipe[] = [
     image:
       'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=80',
     ingredients: [
-      '8 oz fettuccine or linguine',
-      '2 tbsp butter',
-      '4 cloves garlic, minced',
-      '1 cup heavy cream',
-      '1/2 cup grated Parmesan cheese',
-      'Salt and pepper to taste',
+      { id: 'r1-i1', name: 'fettuccine or linguine', quantity: 8,   unit: 'oz',   notes: undefined },
+      { id: 'r1-i2', name: 'butter',                 quantity: 2,   unit: 'tbsp', notes: undefined },
+      { id: 'r1-i3', name: 'garlic',                 quantity: 4,   unit: 'cloves', notes: 'minced' },
+      { id: 'r1-i4', name: 'heavy cream',            quantity: 1,   unit: 'cup',  notes: undefined },
+      { id: 'r1-i5', name: 'grated Parmesan cheese', quantity: 0.5, unit: 'cup',  notes: undefined },
+      { id: 'r1-i6', name: 'salt and pepper',        quantity: null, unit: null,  notes: 'to taste' },
     ],
     steps: [
       'Boil pasta in salted water according to package instructions.',
@@ -38,11 +38,11 @@ let recipes: Recipe[] = [
     image:
       'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=800&q=80',
     ingredients: [
-      '2 slices sourdough bread',
-      '1 ripe avocado',
-      '1/2 lemon, juiced',
-      'Pinch of red pepper flakes',
-      'Sea salt and black pepper',
+      { id: 'r2-i1', name: 'sourdough bread',    quantity: 2,    unit: 'pcs',   notes: undefined },
+      { id: 'r2-i2', name: 'ripe avocado',        quantity: 1,    unit: null,    notes: undefined },
+      { id: 'r2-i3', name: 'lemon',               quantity: 0.5,  unit: null,    notes: 'juiced' },
+      { id: 'r2-i4', name: 'red pepper flakes',   quantity: null, unit: 'pinch', notes: undefined },
+      { id: 'r2-i5', name: 'sea salt and black pepper', quantity: null, unit: null, notes: 'to taste' },
     ],
     steps: [
       'Toast the bread slices until golden brown.',
@@ -53,6 +53,7 @@ let recipes: Recipe[] = [
     ],
   },
 ];
+
 
 export function getRecipes() {
   return recipes;

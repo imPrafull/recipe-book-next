@@ -12,6 +12,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
+    "types": ["jest", "@testing-library/jest-dom", "node"],
     "incremental": true,
     "plugins": [
       {
@@ -28,7 +29,11 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    "jest.config.ts",
+    "jest.setup.ts",
+    "playwright.config.ts",
+    "tests/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

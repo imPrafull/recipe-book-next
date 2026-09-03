@@ -60,6 +60,8 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   let res = await fetch(url, { ...options, headers });
 
   if (res.status === 401) {
+    let refreshedToken: string | null = null;
+    
     if (!isRefreshing) {
       isRefreshing = true;
       try {
@@ -72,17 +74,20 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
         const data = await refreshRes.json();
         
         if (data.success && data.data?.accessToken) {
-          localStorage.setItem('accessToken', data.data.accessToken);
+          refreshedToken = data.data.accessToken;
+          localStorage.setItem('accessToken', refreshedToken);
           if (data.data.refreshToken) {
             localStorage.setItem('refreshToken', data.data.refreshToken);
           }
-          onRefreshed(data.data.accessToken);
+          onRefreshed(refreshedToken);
         } else {
+          refreshedToken = '';
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           onRefreshed('');
         }
       } catch {
+        refreshedToken = '';
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         onRefreshed('');
@@ -91,7 +96,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
       }
     }
 
-    const newToken = await new Promise<string>((resolve) => {
+    const newToken = refreshedToken !== null ? refreshedToken : await new Promise<string>((resolve) => {
       refreshSubscribers.push(resolve);
     });
 
