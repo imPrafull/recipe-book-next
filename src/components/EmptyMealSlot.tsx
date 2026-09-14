@@ -29,17 +29,17 @@ export default function EmptyMealSlot({ mealType, onClick }: EmptyMealSlotProps)
   return (
     <button
       onClick={onClick}
-      className="w-full group relative flex flex-col items-center justify-center gap-2 p-3 min-h-[88px] h-full border-2 border-dashed border-border/40 rounded-lg bg-muted/20 hover:border-primary/30 hover:bg-muted/40 transition-all duration-300 hover:shadow-lg active:scale-[0.98]"
+      className="w-full group relative flex flex-col items-center justify-center gap-1.5 p-2.5 min-h-[76px] h-[76px] border-2 border-dashed border-border/40 rounded-xl bg-muted/20 hover:border-primary/30 hover:bg-muted/40 transition-all duration-300 hover:shadow-lg active:scale-[0.98]"
     >
       <Badge 
         variant="outline" 
-        className={`${mealTypeColors[mealType]} font-semibold text-xs px-2 py-0.5`}
+        className={`${mealTypeColors[mealType]} font-semibold text-xs px-2.5 py-0.5`}
       >
         {mealTypeLabels[mealType]}
       </Badge>
       
       <div className="flex items-center gap-1.5 text-muted-foreground group-hover:text-primary transition-colors">
-        <Plus className="h-4 w-4" />
+        <Plus className="h-3.5 w-3.5" />
         <span className="text-xs font-medium">Add recipe</span>
       </div>
     </button>

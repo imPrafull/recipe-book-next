@@ -29,6 +29,8 @@ app/
       page.tsx
     [id]/edit/
       page.tsx
+  meal-planner/
+    page.tsx            ← Weekly meal planner
   page.tsx              ← Home / recipe list
   layout.tsx
 
@@ -44,11 +46,16 @@ components/
   AuthModal.tsx         ← "Sign in to unlock full access 🍳" modal
   LoginForm.tsx
   SignupForm.tsx
+  MealPlannerGrid.tsx   ← 7-day × 5-meal-type grid layout
+  MealSlotCard.tsx      ← Recipe card in meal slot
+  EmptyMealSlot.tsx     ← Empty meal slot placeholder
+  RecipePickerDialog.tsx ← Recipe selection modal
 
 hooks/
   useRecipes.ts         ← fetch recipe list
   useRecipe.ts          ← fetch single recipe
   useAuth.ts            ← auth state, login, signup, logout
+  useMealPlanner.ts     ← meal planner state management
 
 context/
   AuthContext.tsx        ← global auth state (user, tokens, isAuthenticated)
@@ -67,6 +74,25 @@ lib/
 ## TypeScript Types (lib/types.ts)
 
 Keep all API types in `lib/types.ts`. These must stay in sync with API_CONTRACT.md.
+
+Meal Planner types:
+
+```ts
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack1' | 'snack2';
+export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+export interface MealSlot {
+  day: DayOfWeek;
+  mealType: MealType;
+  recipeIds: string[];
+}
+
+export interface WeekPlan {
+  [key: string]: string[]; // key format: "monday-breakfast"
+}
+```
+
+Recipe and Auth types:
 
 ```ts
 export interface User {
@@ -218,6 +244,7 @@ Do NOT send ingredients or steps as plain arrays — the backend expects JSON st
 Use React hooks.
 Use `AuthContext` for global auth state.
 Prefer custom hooks for API calls.
+Use `useMealPlanner` hook for meal planning state management (local component state, no persistence).
 
 ---
 

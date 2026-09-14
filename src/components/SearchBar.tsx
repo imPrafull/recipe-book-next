@@ -22,8 +22,9 @@ function SearchBarContent({ variant = 'navbar' }: SearchBarProps) {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      router.push(`/recipes?search=${encodeURIComponent(query)}`);
+    const trimmedQuery = query.trim();
+    if (trimmedQuery) {
+      router.push(`/recipes?search=${encodeURIComponent(trimmedQuery)}`);
     } else {
       router.push(`/recipes`);
     }

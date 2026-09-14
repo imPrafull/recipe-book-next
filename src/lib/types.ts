@@ -22,12 +22,36 @@ export interface Recipe {
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack1' | 'snack2';
 export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
+export interface BackendMealPlanSlot {
+  id?: string;
+  day: DayOfWeek;
+  mealType: MealType;
+  recipeId: string | null;
+}
+
+export interface UpsertMealPlanSlot {
+  day: DayOfWeek;
+  mealType: MealType;
+  recipeId: string | null;
+}
+
+export interface BackendMealPlan {
+  id: string;
+  userId: string;
+  weekStartDate: string;
+  slots: BackendMealPlanSlot[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface MealSlot {
   day: DayOfWeek;
   mealType: MealType;
-  recipeIds: string[]; // Array to support multiple recipes per slot
+  recipeIds: string[]; // Array to support recipes per slot
 }
 
 export interface WeekPlan {
   [key: string]: string[]; // key format: "monday-breakfast", value: array of recipe IDs
 }
+
+

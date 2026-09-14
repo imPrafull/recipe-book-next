@@ -6,6 +6,8 @@ Recipe Book is a web application that allows users to store and manage cooking r
 
 Users can add recipes, browse recipes, search recipes, and view detailed cooking instructions.
 
+The application also includes a weekly meal planner to help users organize their meals throughout the week.
+
 The application focuses on simplicity, clean UI, and ease of use.
 
 ---
@@ -18,6 +20,7 @@ The application focuses on simplicity, clean UI, and ease of use.
 4. Edit recipe (requires authentication)
 5. Delete recipe (requires authentication)
 6. Search recipes by title and ingredients (limited for non-authenticated users)
+7. Plan weekly meals (all users, no authentication required)
 
 ---
 
@@ -82,6 +85,9 @@ Form to create recipe (requires login).
 
 Edit Recipe Page
 Form to update recipe (requires login).
+
+Meal Planner Page
+Weekly meal planning interface with 7-day grid (Mon-Sun) and 5 meal types per day (Breakfast, Lunch, Dinner, Snack 1, Snack 2). Users can add, remove, and organize recipes into meal slots. Supports multiple recipes per meal slot.
 
 ---
 
