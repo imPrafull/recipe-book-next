@@ -29,9 +29,8 @@ export default function MealSlotCard({ recipe, onRemove }: MealSlotCardProps) {
   const fallbackGradient = getFallbackColor(recipe.title);
 
   return (
-    <div className="w-full group relative flex items-center gap-2 p-2 border border-border/40 rounded-lg bg-card hover:border-primary/30 hover:shadow-md transition-all duration-300">
-      {/* Thumbnail - Hidden on lg/xl, shown on 2xl+ */}
-      <div className="relative flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-muted hidden 2xl:block">
+    <div className="w-full group relative flex items-center gap-2.5 p-2 min-h-[76px] h-[76px] border border-border/40 rounded-xl bg-card hover:border-primary/30 hover:shadow-md transition-all duration-300">
+      <div className="relative flex-shrink-0 w-14 h-14 xl:w-12 xl:h-12 rounded-lg overflow-hidden bg-muted block lg:hidden xl:block">
         {recipe.image ? (
           <img
             src={recipe.image}
@@ -49,12 +48,12 @@ export default function MealSlotCard({ recipe, onRemove }: MealSlotCardProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 py-1">
-        <h4 className="text-xs font-semibold text-foreground line-clamp-2 leading-snug mb-1">
+      <div className="flex-1 min-w-0 py-0.5">
+        <h4 className="text-xs sm:text-sm font-semibold text-foreground line-clamp-1 leading-snug">
           {recipe.title}
         </h4>
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <Clock className="h-3 w-3" />
+        <div className="flex items-center gap-1 text-muted-foreground mt-1">
+          <Clock className="h-3.5 w-3.5" />
           <span className="text-xs">{recipe.cookingTime} min</span>
         </div>
       </div>

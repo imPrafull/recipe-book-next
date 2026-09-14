@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Search, ChefHat, Clock } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, ChefHat, Clock, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Recipe } from '@/lib/types';
 import { mockRecipes } from '@/mocks/fixtures';
+import { recipesApi } from '@/lib/api/recipes';
 
 interface RecipePickerDialogProps {
   open: boolean;
@@ -28,23 +29,65 @@ export default function RecipePickerDialog({
   selectedRecipeIds = [],
 }: RecipePickerDialogProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [apiRecipes, setApiRecipes] = useState<Recipe[]>([]);
+  const [hasFetchedApi, setHasFetchedApi] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Filter recipes by title search
+  useEffect(() => {
+    if (!open) return;
+
+    let isMounted = true;
+    async function fetchRecipes() {
+      setIsLoading(true);
+      try {
+        const res = await recipesApi.getRecipes({ search: searchQuery.trim(), limit: 50 });
+        if (isMounted) {
+          if (res.recipes && res.recipes.length > 0) {
+            setApiRecipes(res.recipes);
+          } else {
+            setApiRecipes([]);
+          }
+          setHasFetchedApi(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch recipes in picker:', error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    const timer = setTimeout(() => {
+      fetchRecipes();
+    }, 200);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [open, searchQuery]);
+
+  // Use actual API recipes when available, otherwise fall back to mockRecipes
   const filteredRecipes = useMemo(() => {
-    if (!searchQuery.trim()) return mockRecipes;
-    
-    const query = searchQuery.toLowerCase();
-    return mockRecipes.filter((recipe) =>
-      recipe.title.toLowerCase().includes(query)
+    const listSource = hasFetchedApi && apiRecipes.length > 0 ? apiRecipes : mockRecipes;
+
+    if (!searchQuery.trim()) return listSource;
+
+    const q = searchQuery.toLowerCase();
+    return listSource.filter(
+      (r) =>
+        r.title.toLowerCase().includes(q) ||
+        (r.description && r.description.toLowerCase().includes(q))
     );
-  }, [searchQuery]);
+  }, [searchQuery, apiRecipes, hasFetchedApi]);
 
   const handleSelectRecipe = (recipeId: string) => {
     onSelectRecipe(recipeId);
     setSearchQuery(''); // Clear search after selection
   };
 
-  // Deterministic color fallback (same as RecipeCard)
+  // Deterministic color fallback
   const getFallbackColor = (title: string) => {
     const colors = [
       'from-orange-400 to-rose-400',
@@ -80,6 +123,9 @@ export default function RecipePickerDialog({
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
           />
+          {isLoading && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+          )}
         </div>
 
         {/* Recipe List */}
@@ -94,7 +140,7 @@ export default function RecipePickerDialog({
           ) : (
             filteredRecipes.map((recipe) => {
               const isSelected = selectedRecipeIds.includes(recipe.id);
-              const fallbackGradient = getFallbackColor(recipe.title);
+              const fallbackGradient = getFallbackColor(recipe.title || 'Recipe');
 
               return (
                 <div
@@ -133,7 +179,7 @@ export default function RecipePickerDialog({
                     </p>
                     <div className="flex items-center gap-1 mt-1.5 text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      <span className="text-xs">{recipe.cookingTime} min</span>
+                      <span className="text-xs">{recipe.cookingTime || 15} min</span>
                     </div>
                   </div>
 

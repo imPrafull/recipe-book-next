@@ -21,38 +21,64 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
-// Mock token generation
+// Mock token generation - creates real JWT format for proper validation
 export function createAuthTokens(userId: string = 'test-user-id', expired: boolean = false): AuthTokens {
-  const now = Date.now();
-  const expiry = expired ? now - 1000 : now + 900000; // 15 minutes from now or expired
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const now = Math.floor(Date.now() / 1000); // Convert to seconds (JWT standard)
+  const accessExp = expired ? now - 1000 : now + 900; // 15 minutes from now or expired
+  const refreshExp = now + 604800; // 7 days
   
-  // Simple mock JWT format (not real JWT, just for testing)
-  const accessToken = `mock.access.token.${userId}.${expiry}`;
-  const refreshToken = `mock.refresh.token.${userId}.${now + 604800000}`; // 7 days
+  const accessPayload = Buffer.from(JSON.stringify({ 
+    userId, 
+    exp: accessExp,
+    type: 'access'
+  })).toString('base64url');
+  
+  const refreshPayload = Buffer.from(JSON.stringify({ 
+    userId, 
+    exp: refreshExp,
+    type: 'refresh'
+  })).toString('base64url');
+  
+  const signature = 'mock-signature';
   
   return {
-    accessToken,
-    refreshToken,
+    accessToken: `${header}.${accessPayload}.${signature}`,
+    refreshToken: `${header}.${refreshPayload}.${signature}`,
   };
 }
 
-// Validate mock token format and check expiry
+// Validate JWT format and check expiry
 export function validateToken(token: string): { valid: boolean; userId: string | null; expired: boolean } {
-  if (!token || !token.startsWith('mock.')) {
+  if (!token) {
     return { valid: false, userId: null, expired: false };
   }
   
   const parts = token.split('.');
-  if (parts.length < 5) {
+  if (parts.length !== 3) {
     return { valid: false, userId: null, expired: false };
   }
   
-  const userId = parts[3];
-  const expiry = parseInt(parts[4], 10);
-  const now = Date.now();
-  const expired = expiry < now;
-  
-  return { valid: true, userId, expired };
+  try {
+    // Decode payload (base64url)
+    const payload = JSON.parse(
+      Buffer.from(parts[1], 'base64url').toString('utf-8')
+    );
+    
+    const userId = payload.userId;
+    const exp = payload.exp; // exp is in seconds (JWT standard)
+    
+    if (!userId || !exp) {
+      return { valid: false, userId: null, expired: false };
+    }
+    
+    const now = Math.floor(Date.now() / 1000);
+    const expired = exp < now;
+    
+    return { valid: true, userId, expired };
+  } catch (error) {
+    return { valid: false, userId: null, expired: false };
+  }
 }
 
 // User factory
